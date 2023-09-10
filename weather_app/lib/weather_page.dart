@@ -11,17 +11,18 @@ class WeatherPage extends StatefulWidget {
 }
 
 class _WeatherPageState extends State<WeatherPage> {
- City? city;
+ WeatherModel? weatherModel;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
           const Image(
-              fit: BoxFit.cover,
+            width: double.infinity,
+            fit: BoxFit.cover,
               image: AssetImage('images/welcomeimg.webp')),
-            const Padding(
-            padding: EdgeInsets.only(top: 88.0),
+             Padding(
+            padding: const EdgeInsets.only(top: 88.0),
             child: SizedBox(
               // decoration: BoxDecoration(
               //     border: Border.all(color: Colors.white)),
@@ -30,12 +31,12 @@ class _WeatherPageState extends State<WeatherPage> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Text('city!.name',
-                        style: TextStyle(
+                    Text('${weatherModel?.city.name}',
+                        style: const TextStyle(
                             fontSize: 50,
                             color: Colors.white,
                             fontWeight: FontWeight.bold)),
-                    Text("temp- 30",
+                    const Text("temp- 30",
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 50,
