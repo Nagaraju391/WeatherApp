@@ -27,6 +27,7 @@ class _WelcomePageState extends State<WelcomePage> {
     super.initState();
   }
 
+  WeatherModel? weatherModel;
   var cityName = '';
 
   @override
@@ -42,14 +43,14 @@ class _WelcomePageState extends State<WelcomePage> {
               fontSize: 55.0,
               fontWeight: FontWeight.bold,
             )),
-        FadeAnimatedText(cityName,
+        FadeAnimatedText("weatherModel!.city.name",
             textStyle: const TextStyle(
               color: Colors.white,
               fontSize: 35.0,
               fontWeight: FontWeight.bold,
             ))
       ])),
-      nextScreen: const WeatherPage(),
+      nextScreen:  WeatherPage(weatherModel),
       splashTransition: SplashTransition.scaleTransition,
       pageTransitionType: PageTransitionType.fade,
     );
@@ -81,11 +82,11 @@ class _WelcomePageState extends State<WelcomePage> {
       List<Placemark> placemarks =
           await placemarkFromCoordinates(position.latitude, position.longitude);
       Placemark place = placemarks[0];
-      getWeather(position.latitude, position.longitude);
+      weatherModel = await getWeather(position.latitude, position.longitude);
+      print("cityName=> ${weatherModel!.city.name}");
       setState(() {
-        print(position.latitude);
-        print(position.longitude);
-        cityName = place.locality!;
+        print(weatherModel?.list[0].main.temp.toString());
+        cityName = weatherModel!.city.name;
       });
     } catch (e) {
       // print(e);
@@ -95,17 +96,14 @@ class _WelcomePageState extends State<WelcomePage> {
   Future<WeatherModel> getWeather(latitude, longitude) async {
     final url =
         "http://api.openweathermap.org/data/2.5/forecast?lat=$latitude&lon=$longitude&appid=2cf6750235cc48c419c387bd9e313d74";
-
-    print(url);
-    final uri = Uri.parse(url);
-    Response response = await http.get(uri);
-    final results = await json.decode(response.body);
-    var weatherResult = WeatherModel.fromJson(results);
-    print(weatherResult);
-    return weatherResult;
+    Response response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final responseBody = json.decode(response.body);
+      return WeatherModel.fromJson(responseBody);
+    } else {
+      throw Exception('somthing went wrong');
+    }
   }
 }
-// https://api.openweathermap.org/data/2.5/forecast/daily?lat=17.4530683&lon=79.2742917&appid=2cf6750235cc48c419c387bd9e313d74
-// https://api.openweathermap.org/data/2.5/forecast/daily?lat=17.4530683&lon=79.2742917&cnt=16&appid=2cf6750235cc48c419c387bd9e313d74
-// api.openweathermap.org/data/2.5/forecast/daily?lat=17.4530683&lon=79.2742917&cnt=7&appid=2cf6750235cc48c419c387bd9e313d74
-//http://api.openweathermap.org/data/2.5/forecast?lat=17.4530683&lon=79.2742917&cnt=16&appid=2cf6750235cc48c419c387bd9e313d74
+//http://api.openweathermap.org/data/2.5/forecast?lat=$latitude&lon=$longitude&appid=2cf6750235cc48c419c387bd9e313d74;
+//https://api.openweathermap.org/data/2.5/forecast?q=Bhuvanagiri&appid=2cf6750235cc48c419c387bd9e313d74
