@@ -263,31 +263,32 @@ final podValues = EnumValues({
 });
 
 class Weather {
-  int id;
-  MainEnum main;
-  Description description;
-  String icon;
-
   Weather({
     required this.id,
     required this.main,
     required this.description,
     required this.icon,
   });
+  late final int id;
+  late final String main;
+  late final String description;
+  late final String icon;
 
-  factory Weather.fromJson(Map<String, dynamic> json) => Weather(
-    id: json["id"],
-    main: mainEnumValues.map[json["main"]]!,
-    description: descriptionValues.map[json["description"]]!,
-    icon: json["icon"],
-  );
+  Weather.fromJson(Map<String, dynamic> json){
+    id = json['id'];
+    main = json['main'];
+    description = json['description'];
+    icon = json['icon'];
+  }
 
-  Map<String, dynamic> toJson() => {
-    "id": id,
-    "main": mainEnumValues.reverse[main],
-    "description": descriptionValues.reverse[description],
-    "icon": icon,
-  };
+  Map<String, dynamic> toJson() {
+    final _data = <String, dynamic>{};
+    _data['id'] = id;
+    _data['main'] = main;
+    _data['description'] = description;
+    _data['icon'] = icon;
+    return _data;
+  }
 }
 
 enum Description {
@@ -355,3 +356,7 @@ class EnumValues<T> {
     return reverseMap;
   }
 }
+
+
+
+

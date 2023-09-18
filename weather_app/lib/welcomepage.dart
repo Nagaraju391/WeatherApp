@@ -89,7 +89,7 @@ class _WelcomePageState extends State<WelcomePage> {
         cityName = weatherModel!.city.name;
       });
     } catch (e) {
-      // print(e);
+       print(e);
     }
   }
 

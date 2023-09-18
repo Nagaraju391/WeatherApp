@@ -38,7 +38,7 @@ class _WeatherPageState extends State<WeatherPage> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  Text(weatherModel!.city.name,
+                  Text(weatherModel.city.name,
                       style: const TextStyle(
                           fontSize: 50,
                           color: Colors.white,
