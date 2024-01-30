@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:weather_app/weather_model.dart';
 
 class WeatherPage extends StatefulWidget {
-  var weatherModel;
+  final weatherModel;
 
-  WeatherPage(this.weatherModel, {super.key});
+  const WeatherPage(this.weatherModel, {super.key});
 
   @override
   State<WeatherPage> createState() => _WeatherPageState(weatherModel);
@@ -12,7 +12,6 @@ class WeatherPage extends StatefulWidget {
 
 class _WeatherPageState extends State<WeatherPage> {
   var weatherModel;
-
   _WeatherPageState(this.weatherModel);
 @override
   void initState() {
@@ -29,7 +28,7 @@ class _WeatherPageState extends State<WeatherPage> {
             fit: BoxFit.cover,
             image: AssetImage('images/welcomeimg.webp')),
         Padding(
-          padding: EdgeInsets.only(top: 88.0),
+          padding: const EdgeInsets.only(top: 88.0),
           child: SizedBox(
             // decoration: BoxDecoration(
             //     border: Border.all(color: Colors.white)),

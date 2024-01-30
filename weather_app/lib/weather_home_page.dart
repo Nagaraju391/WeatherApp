@@ -1,481 +1,149 @@
-import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/http.dart';
-import 'package:weather_app/weather_model.dart';
+import 'package:provider/provider.dart';
+import 'package:weather_app/db/db_helper.dart';
+import 'package:weather_app/provider.dart';
+import 'package:weather_app/weather_item_container.dart';
+
+import 'db/city_model.dart';
 
 class WeatherHomePage extends StatefulWidget {
-  const WeatherHomePage({Key? key}) : super(key: key);
+  final lat;
+  final lng;
+   var boolean;
+
+   WeatherHomePage(this.lat, this.lng,this.boolean, {super.key});
 
   @override
-  State<WeatherHomePage> createState() => _WeatherHomePageState();
+  State<WeatherHomePage> createState() => _WeatherHomePageState(lat, lng, boolean);
 }
 
 class _WeatherHomePageState extends State<WeatherHomePage> {
-  WeatherModel? _weatherModel;
-
+  var lat;
+  var lng;
+  var boolean;
   @override
   void initState() {
-    _getPosition();
     super.initState();
+    Timer.periodic( const Duration(seconds: 60), (time) {
+      final weatherProvider =Provider.of<WeatherProvider>(context,listen: false);
+      weatherProvider.updateTime();
+      setState(() {
+
+      });
+    });
+    final weatherProvider =
+        Provider.of<WeatherProvider>(context, listen: false);
+    weatherProvider.getWeatherData(widget.lat, widget.lng);
+    setState(() {});
   }
+
+  DataBaseHelper dataBaseHelper = DataBaseHelper();
+  var dc = 273.15;
+  _WeatherHomePageState(lat, lng,boolean);
 
   @override
   Widget build(BuildContext context) {
-    return   _weatherModel == null ? const Image(
-            width: double.infinity,
-            fit: BoxFit.cover,
-            image: AssetImage('images/welcomeimg.webp')) :
-    Scaffold(
-              body: Stack(children: [
-          const Image(
-                width: double.infinity,
-                fit: BoxFit.cover,
-                image: AssetImage('images/welcomeimg.webp')),
-          Padding(
-              padding: EdgeInsets.only(top: 78.0),
-              child: SizedBox(
-                // decoration: BoxDecoration(
-                //     border: Border.all(color: Colors.white)),
-                height: 200,
-                width: double.infinity,
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Text(_weatherModel!.city.name,
-                          style: const TextStyle(
-                              fontSize: 50,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)),
-                      Text(_weatherModel!.list[0].main.temp.toString(),
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 50,
-                              fontWeight: FontWeight.bold)),
-                    ],
+    return Consumer<WeatherProvider>(
+      builder: (BuildContext context, value, Widget? child) {
+        return value.weatherModel.name == null
+            ? Container(
+                decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                        colors: [Colors.blue, Colors.cyanAccent],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter)),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            : Scaffold(
+                body: Stack(children: [
+                  const Image(
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      image: AssetImage('images/welcomeimg.webp')),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 28.0),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height / 3,
+                      width: double.infinity,
+                      child: SingleChildScrollView(
+                          child: Column(
+                        children: [
+                           Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                         widget.boolean == true ?  IconButton(
+                              onPressed: ()async{
+                                CityModel cityModel = CityModel(
+                                    cityName: value.weatherModel.name,
+                                    lat: value.weatherModel.coord!.lat,
+                                    lng: value.weatherModel.coord!.lon);
+
+                               await addCityToDb(cityModel);
+                                 setState(() {
+                                   widget.boolean =false;
+                                 });
+                              },
+                                  icon: const
+                                     Padding(
+                                      padding: EdgeInsets.only(right: 26.0),
+                                      child: Icon(Icons.star_border,color: Colors.white),
+                                    ),
+
+                                 ): const Padding(
+                                   padding: EdgeInsets.only(right: 38.0),
+                                   child: Icon(Icons.star,color: Colors.lightGreen,),
+                                 ),
+                          ],),
+                          Text(value.weatherModel.name.toString(),
+                              style: const TextStyle(
+                                  fontSize: 50,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                          Text((('${value.weatherModel.main!.temp.round()-dc.toInt()} °C')),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 50,
+                                  fontWeight: FontWeight.bold)),
+                        ],
+                      )),
+                    ),
                   ),
-                ),
-              ),
-          ),
-          Container(
-              decoration: const BoxDecoration(
-                // image: DecorationImage(
-                //     fit: BoxFit.cover,
-                //     image: AssetImage('images/welcomeimg.webp'))
-              ),
-              padding: const EdgeInsets.only(
-                top: 270.0,
-                left: 15.0,
-                right: 15.0,
-              ),
-              height: double.infinity,
-              width: double.infinity,
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Container(
-                      height: MediaQuery.of(context).size.height / 4,
-                      decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(21),
-                          border: Border.all(color: Colors.white)),
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    Container(
-                      height: MediaQuery.of(context).size.height,
-                      decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(21),
-                          border: Border.all(color: Colors.white)),
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    Container(
-                      height: MediaQuery.of(context).size.height / 4,
-                      decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(21),
-                          border: Border.all(color: Colors.white)),
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    Container(
-                      height: MediaQuery.of(context).size.height / 2.5,
-                      decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(21),
-                          border: Border.all(color: Colors.white)),
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                              margin: const EdgeInsets.all(5.0),
-                              height: MediaQuery.of(context).size.height / 3.5,
-                              decoration: BoxDecoration(
-                                  color: Colors.black26,
-                                  borderRadius: BorderRadius.circular(21),
-                                  border: Border.all(color: Colors.white)),
-                              child: const Column(children: [
-                                Padding(
-                                  padding: EdgeInsets.all(13.0),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.sunny,
-                                        color: Colors.white,
-                                      ),
-                                      Text(" UV INDEX",
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold))
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  'uv.toString()',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ])),
-                        ),
-                        Expanded(
-                          child: Container(
-                              margin: const EdgeInsets.all(5.0),
-                              height: MediaQuery.of(context).size.height / 3.5,
-                              decoration: BoxDecoration(
-                                  color: Colors.black26,
-                                  borderRadius: BorderRadius.circular(21),
-                                  border: Border.all(color: Colors.white)),
-                              child: const Column(children: [
-                                Padding(
-                                  padding: EdgeInsets.all(13.0),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.sunny,
-                                        color: Colors.white,
-                                      ),
-                                      Text(" UV INDEX",
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold))
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  'uv.toString()',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ])),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                              margin: const EdgeInsets.all(5.0),
-                              height: MediaQuery.of(context).size.height / 3.5,
-                              decoration: BoxDecoration(
-                                  color: Colors.black26,
-                                  borderRadius: BorderRadius.circular(21),
-                                  border: Border.all(color: Colors.white)),
-                              child: const Column(children: [
-                                Padding(
-                                  padding: EdgeInsets.all(13.0),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.sunny,
-                                        color: Colors.white,
-                                      ),
-                                      Text(" UV INDEX",
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold))
-                                    ],
-                                  ),
-                                ),
-                                Text('uv.toString()',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ])),
-                        ),
-                        Expanded(
-                          child: Container(
-                              margin: const EdgeInsets.all(5.0),
-                              height: MediaQuery.of(context).size.height / 3.5,
-                              decoration: BoxDecoration(
-                                  color: Colors.black26,
-                                  borderRadius: BorderRadius.circular(21),
-                                  border: Border.all(color: Colors.white)),
-                              child: const Column(children: [
-                                Padding(
-                                  padding: EdgeInsets.all(13.0),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.sunny,
-                                        color: Colors.white,
-                                      ),
-                                      Text(" UV INDEX",
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold))
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  'uv.toString()',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ])),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                              margin: const EdgeInsets.all(5.0),
-                              height: MediaQuery.of(context).size.height / 3.5,
-                              decoration: BoxDecoration(
-                                  color: Colors.black26,
-                                  borderRadius: BorderRadius.circular(21),
-                                  border: Border.all(color: Colors.white)),
-                              child: const Column(children: [
-                                Padding(
-                                  padding: EdgeInsets.all(13.0),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.sunny,
-                                        color: Colors.white,
-                                      ),
-                                      Text(" UV INDEX",
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold))
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  'uv.toString()',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ])),
-                        ),
-                        Expanded(
-                          child: Container(
-                              margin: const EdgeInsets.all(5.0),
-                              height: MediaQuery.of(context).size.height / 3.5,
-                              decoration: BoxDecoration(
-                                  color: Colors.black26,
-                                  borderRadius: BorderRadius.circular(21),
-                                  border: Border.all(color: Colors.white)),
-                              child: const Column(children: [
-                                Padding(
-                                  padding: EdgeInsets.all(13.0),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.sunny,
-                                        color: Colors.white,
-                                      ),
-                                      Text(" UV INDEX",
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold))
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  'uv.toString()',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ])),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            margin: const EdgeInsets.all(5.0),
-                            height: MediaQuery.of(context).size.height / 3.5,
-                            decoration: BoxDecoration(
-                                color: Colors.black26,
-                                borderRadius: BorderRadius.circular(21),
-                                border: Border.all(color: Colors.white)),
-                            child: const Column(children: [
-                              Padding(
-                                padding: EdgeInsets.all(13.0),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.sunny,
-                                      color: Colors.white,
-                                    ),
-                                    Text(" UV INDEX",
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold))
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                'uv.toString()',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ]),
+                  Padding(
+                    padding: EdgeInsets.only(
+                        top: MediaQuery.of(context).size.height / 2.5),
+                    child: Consumer<WeatherProvider>(builder: (context, value, Widget? child) {
+                      return GridView.count(
+                        childAspectRatio: 3 / 4,
+                        crossAxisCount: 2,
+                        children:  [
+                          const CustomContainer(
+                            icon:Icon(Icons.sunny) , weatherEM: 'UV INDEX',data: "",
                           ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            margin: const EdgeInsets.all(5.0),
-                            height: MediaQuery.of(context).size.height / 3.5,
-                            decoration: BoxDecoration(
-                                color: Colors.black26,
-                                borderRadius: BorderRadius.circular(21),
-                                border: Border.all(color: Colors.white)),
-                            child: const Column(children: [
-                              Padding(
-                                padding: EdgeInsets.all(13.0),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.sunny,
-                                      color: Colors.white,
-                                    ),
-                                    Text(" UV INDEX",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold))
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                'uv.toString()',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-
-                                ),
-                              ),
-                            ]),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-          ),
-        ]),
-            );
-
-
+                          CustomContainer( icon:const Icon(Icons.access_time_sharp) , weatherEM: 'TIME',data: value.time),
+                          CustomContainer( icon:const Icon(Icons.wind_power) , weatherEM: 'WIND',data: '${value.weatherModel.wind?.speed} kph' ),
+                          CustomContainer( icon:const Icon(Icons.water_drop) , weatherEM: 'RAINFALL',data: value.weatherModel.weather?[0].description),
+                          CustomContainer( icon:const Icon(Icons.thermostat) , weatherEM: 'FEELS LIKE',data: ('${value.weatherModel.main!.feelsLike.round()-dc.toInt()} °')),
+                          CustomContainer( icon:const Icon(Icons.water) , weatherEM: 'HUMIDITY',data: '${value.weatherModel.main?.humidity} %' ),
+                          CustomContainer( icon:const Icon(Icons.remove_red_eye) , weatherEM: 'VISIBILITY',data: value.weatherModel.visibility),
+                          CustomContainer( icon:const Icon(Icons.speed_sharp) , weatherEM: 'PRESSURE',data: "${value.weatherModel.main?.pressure} hPa"),
+                        ],
+                      );
+                    }),
+                  ),
+                ]),
+              );
+      },
+    );
   }
+  addCityToDb(CityModel cityModel) async {
+    await dataBaseHelper.insert(cityModel);
+    setState(() {
 
-  Future _getPosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
-      }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
-    }
-    Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-
-
-    List<Placemark> placemarks =
-    await placemarkFromCoordinates(position.latitude, position.longitude);
-    Placemark place = placemarks[0];
-      _weatherModel =
-    await getWeather(position.latitude, position.longitude);
-      setState(() {});
+    });
   }
-
-  Future<WeatherModel> getWeather(latitude, longitude) async {
-    final url =
-        "http://api.openweathermap.org/data/2.5/forecast?lat=$latitude&lon=$longitude&appid=2cf6750235cc48c419c387bd9e313d74";
-    print(url);
-    Response response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final responseBody = json.decode(response.body);
-      return WeatherModel.fromJson(responseBody);
-    } else {
-      throw Exception('somthing went wrong');
-    }
-  }
-
 
 }
